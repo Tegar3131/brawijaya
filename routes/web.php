@@ -28,20 +28,9 @@ $placeholder = function (
 |--------------------------------------------------------------------------
 */
 
-Route::get('/', $placeholder(
-    layout: 'layouts.public',
-    title: 'Beranda SIMPB',
-    description: 'Landing page publik Sistem Informasi Museum dan Perpustakaan Brawijaya.',
-    endpoints: [
-        ['method' => 'GET', 'path' => '/api/catalog/search', 'note' => 'Search katalog publik'],
-        ['method' => 'GET', 'path' => '/api/catalog/categories', 'note' => 'Browse kategori'],
-    ],
-    notes: [
-        'Guest hanya melihat koleksi published dan public.',
-        'Halaman ini belum mengambil data API.',
-    ],
-    eyebrow: 'Public'
-))->name('public.home');
+Route::get('/', function () {
+    return view('pages.public.home');
+})->name('public.home');
 
 Route::get('/catalog', function () {
     return view('pages.catalog.index');
@@ -81,6 +70,9 @@ Route::get('/catalog/collections/{identifier}', function (string $identifier) {
         'identifier' => $identifier,
     ]);
 })->name('public.collections.show');
+
+Route::get('/catalog/collections/{identifier}/export/xml', [\App\Http\Controllers\CatalogExportController::class, 'exportXml'])
+    ->name('public.collections.export.xml');
 /*
 |--------------------------------------------------------------------------
 | Auth Frontend Routes

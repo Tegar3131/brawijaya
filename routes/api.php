@@ -146,6 +146,12 @@ Route::delete('/{identifier}/subjects/{subject}', [StaffCollectionMaintenanceCon
 Route::post('/{identifier}/digital-assets', [StaffCollectionMaintenanceController::class, 'registerDigitalAsset'])
     ->name('digital-assets.register');
 
+Route::patch('/{identifier}/digital-assets/{asset}', [StaffCollectionMaintenanceController::class, 'updateDigitalAsset'])
+    ->name('digital-assets.update');
+
+Route::delete('/{identifier}/digital-assets/{asset}', [StaffCollectionMaintenanceController::class, 'deleteDigitalAsset'])
+    ->name('digital-assets.delete');
+
         Route::get('/{identifier}/versions', [StaffCollectionController::class, 'versions'])
             ->name('versions');
 

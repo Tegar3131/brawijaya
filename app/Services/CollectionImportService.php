@@ -541,20 +541,23 @@ class CollectionImportService
         $errors = [];
 
         // Validasi dasar koleksi
-        $collectionRules = [
-            'collection.record_code'        => ['required', 'string', 'max:80', 'unique:collections,record_code'],
-            'collection.collection_type'    => ['required', 'string', 'max:80'],
-            'collection.title'              => ['required', 'string', 'max:500'],
-            'collection.subtitle'           => ['nullable', 'string', 'max:500'],
-            'collection.language_code'      => ['nullable', 'string', 'max:10'],
-            'collection.publication_status' => ['nullable', 'in:draft,published,restricted,archived'],
-            'collection.visibility'         => ['nullable', 'in:public,member,internal,restricted'],
-            'collection.year_start'         => ['nullable', 'integer', 'min:1'],
-            'collection.year_end'           => ['nullable', 'integer', 'min:1'],
-            'creators'                      => ['required', 'array', 'min:1'],
-            'creators.*.name'               => ['required', 'string', 'max:255'],
-        ];
-
+       $collectionRules = [
+    'collection.record_code'        => ['required', 'string', 'max:80', 'unique:collections,record_code'],
+    'collection.collection_type'    => ['required', 'string', 'max:80'],
+    'collection.title'              => ['required', 'string', 'max:500'],
+    'collection.subtitle'           => ['nullable', 'string', 'max:500'],
+    'collection.language_code'      => ['nullable', 'string', 'max:10'],
+    'collection.publication_status' => ['nullable', 'in:draft,published,restricted,archived'],
+    'collection.visibility'         => ['nullable', 'in:public,member,internal,restricted'],
+    'collection.year_start'         => ['nullable', 'integer', 'min:1'],
+    'collection.year_end'           => ['nullable', 'integer', 'min:1'],
+    'creators'                      => ['required', 'array', 'min:1'],
+    'creators.*.name'               => ['required', 'string', 'max:255'],
+    'creators.*.role'               => ['nullable', 'in:author,editor,contributor,translator,illustrator,compiler,creator'],
+    // TAMBAHKAN VALIDASI SUBJECT DISINI
+    'subjects'                      => ['nullable', 'array'],
+    'subjects.*.term'               => ['required_with:subjects', 'string', 'max:255'],
+'subjects.*.type'               => ['required_with:subjects', 'in:topic,geographic,temporal,person,organization,event'],];
         if ($unitType === 'library') {
             $specificRules = [
                 'library_item.bibliographic_level' => ['required', 'in:monograph,serial,article,thesis,map,manuscript'],
@@ -673,17 +676,30 @@ class CollectionImportService
         $subjects  = $this->parseMultiValue($row['subjects'] ?? '', 2, ['term', 'type']);
 
         // Cast is_primary ke boolean
-        foreach ($creators as &$creator) {
-            $creator['is_primary'] = isset($creator['is_primary']) && $creator['is_primary'] === '1';
-            $creator['role']       = $creator['role'] ?? 'author';
-        }
-        unset($creator);
+foreach ($creators as &$creator) {
+    $creator['is_primary'] = isset($creator['is_primary']) && $creator['is_primary'] === '1';
+    // Gunakan empty() dan strtolower untuk mencegah error string kosong & kapitalisasi
+    $creator['role']       = empty($creator['role']) ? 'author' : strtolower($creator['role']);
+}
+unset($creator);
 
-        // Default subject type
-        foreach ($subjects as &$subject) {
-            $subject['type'] = $subject['type'] ?? 'topical';
-        }
-        unset($subject);
+// Default subject type
+foreach ($subjects as &$subject) {
+    // Beri nilai default 'topic' (bukan topical)
+    $type = empty($subject['type']) ? 'topic' : strtolower($subject['type']);
+    
+    // Mapping otomatis dari istilah template lama ke istilah sistem yang baru
+    $typeMap = [
+        'topical'       => 'topic',
+        'personal'      => 'person',
+        'corporate'     => 'organization',
+        'chronological' => 'temporal',
+        'genre'         => 'topic', // atau 'event' tergantung kebutuhan bisnis
+    ];
+    
+    $subject['type'] = $typeMap[$type] ?? $type;
+}
+unset($subject);
 
         $payload = [
             'collection' => $collection,

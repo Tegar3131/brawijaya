@@ -383,14 +383,60 @@ window.addEventListener('popstate', () => {
     loadCatalog(null, false);
 });
 
+const catalogTitles = {
+    museum: {
+        title: 'Katalog Museum',
+        description: 'Telusuri koleksi artefak, foto, dan benda bersejarah dari Museum Brawijaya.',
+    },
+    library: {
+        title: 'Katalog Perpustakaan',
+        description: 'Cari koleksi buku, jurnal, dan literatur di Perpustakaan Brawijaya.',
+    },
+    default: {
+        title: 'Katalog Museum dan Perpustakaan',
+        description: 'Cari koleksi perpustakaan dan museum yang sudah dipublikasikan.',
+    },
+};
+
+function updatePageTitle() {
+    const unitType = form?.elements?.unit_type?.value || '';
+    const config = catalogTitles[unitType] || catalogTitles.default;
+
+    const titleEl = document.querySelector('#catalog-page-title');
+    const descEl = document.querySelector('#catalog-page-description');
+
+    if (titleEl) {
+        titleEl.textContent = config.title;
+    }
+
+    if (descEl) {
+        descEl.textContent = config.description;
+    }
+
+    document.title = `${config.title} - SIMPB`;
+}
+
 setFieldValuesFromUrl();
+updatePageTitle();
 
 if (form) {
-    form.addEventListener('submit', handleSubmit);
+    form.addEventListener('submit', (event) => {
+        handleSubmit(event);
+        updatePageTitle();
+    });
 }
 
 if (resetButton) {
-    resetButton.addEventListener('click', handleReset);
+    resetButton.addEventListener('click', () => {
+        handleReset();
+        updatePageTitle();
+    });
+}
+
+// Also update title when unit_type dropdown changes
+const unitTypeSelect = form?.elements?.unit_type;
+if (unitTypeSelect) {
+    unitTypeSelect.addEventListener('change', updatePageTitle);
 }
 
 loadCatalog(null, false);

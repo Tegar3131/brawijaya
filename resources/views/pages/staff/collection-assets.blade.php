@@ -6,12 +6,6 @@
     <section class="card">
         <h2 id="asset-page-title">Digital Asset Koleksi</h2>
         <p>
-            Halaman ini mengambil data dari endpoint
-            <code>GET /api/staff/collections/{{ $identifier }}</code>,
-            mengunggah berkas fisik menggunakan <code>POST /api/staff/collections/{{ $identifier }}/digital-assets/upload</code>,
-            atau mendaftarkan metadata menggunakan <code>POST /api/staff/collections/{{ $identifier }}/digital-assets</code>.
-        </p>
-        <p>
             <a href="{{ route('staff.collections.show', ['identifier' => $identifier]) }}">
                 ← Kembali ke detail internal
             </a>

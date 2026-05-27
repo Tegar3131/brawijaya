@@ -160,16 +160,19 @@ function publicStorageUrl(path) {
 
 function assetPreviewUrl(asset) {
     return asset.public_url
+        || publicStorageUrl(asset.path)
         || publicStorageUrl(asset.thumbnail_path)
-        || publicStorageUrl(asset.watermarked_path)
-        || publicStorageUrl(asset.path);
+        || publicStorageUrl(asset.watermarked_path);
 }
+
+let currentAssets = [];
 
 function renderAssets(collection) {
     if (!assetList) {
         return;
     }
     const assets = digitalAssets(collection);
+    currentAssets = assets;
     if (!Array.isArray(assets) || assets.length === 0) {
         assetList.innerHTML = '<p>Belum ada digital asset.</p>';
         return;
@@ -177,12 +180,13 @@ function renderAssets(collection) {
 
     assetList.innerHTML = `
         <div class="asset-grid">
-            ${assets.map((asset) => {
+            ${assets.map((asset, index) => {
                 const preview = assetPreviewUrl(asset);
-                const isImage = String(asset.mime_type || '').startsWith('image/');
+                const ext = String(asset.extension || '').toLowerCase();
+                const isImage = String(asset.mime_type || '').startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
                 
                 return `
-                    <div class="asset-item">
+                    <div class="asset-item" data-index="${index}" data-id="${asset.id}">
                         ${preview && isImage ? `
                             <div class="asset-preview">
                                 <img src="${escapeHtml(preview)}" alt="${escapeHtml(asset.caption || 'Digital asset')}">
@@ -236,10 +240,94 @@ function renderAssets(collection) {
                             <div class="summary-label">Dibuat</div>
                             <div class="summary-value">${escapeHtml(asset.created_at || '-')}</div>
                         </div>
+                        
+                        <div class="asset-edit-container" style="display: none;"></div>
+
+                        <div class="asset-actions-row" style="margin-top: 12px; display: flex; gap: 8px;">
+                            <button type="button" class="secondary btn-edit-asset" data-index="${index}">Edit</button>
+                            <button type="button" class="danger btn-delete-asset" data-id="${asset.id}">Hapus</button>
+                        </div>
                     </div>
                 `;
             }).join('')}
         </div>
+    `;
+}
+
+function renderEditForm(asset, index) {
+    return `
+        <form class="asset-edit-form" data-id="${asset.id}" data-index="${index}" style="margin-top: 12px;">
+            <div class="asset-form-grid" style="grid-template-columns: 1fr;">
+                <div>
+                    <label>Asset Type</label>
+                    <select name="asset_type">
+                        <option value="cover" ${asset.asset_type==='cover'?'selected':''}>cover</option>
+                        <option value="image" ${asset.asset_type==='image'?'selected':''}>image</option>
+                        <option value="photo" ${asset.asset_type==='photo'?'selected':''}>photo</option>
+                        <option value="pdf" ${asset.asset_type==='pdf'?'selected':''}>pdf</option>
+                        <option value="document" ${asset.asset_type==='document'?'selected':''}>document</option>
+                        <option value="audio" ${asset.asset_type==='audio'?'selected':''}>audio</option>
+                        <option value="video" ${asset.asset_type==='video'?'selected':''}>video</option>
+                        <option value="thumbnail" ${asset.asset_type==='thumbnail'?'selected':''}>thumbnail</option>
+                        <option value="mets_package" ${asset.asset_type==='mets_package'?'selected':''}>mets_package</option>
+                        <option value="other" ${asset.asset_type==='other'?'selected':''}>other</option>
+                    </select>
+                </div>
+                <div>
+                    <label>File Role</label>
+                    <select name="file_role">
+                        <option value="original" ${asset.file_role==='original'?'selected':''}>original</option>
+                        <option value="access" ${asset.file_role==='access'?'selected':''}>access</option>
+                        <option value="master" ${asset.file_role==='master'?'selected':''}>master</option>
+                        <option value="thumbnail" ${asset.file_role==='thumbnail'?'selected':''}>thumbnail</option>
+                        <option value="preservation" ${asset.file_role==='preservation'?'selected':''}>preservation</option>
+                        <option value="watermarked" ${asset.file_role==='watermarked'?'selected':''}>watermarked</option>
+                        <option value="derivative" ${asset.file_role==='derivative'?'selected':''}>derivative</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Disk</label>
+                    <input name="disk" type="text" value="${escapeHtml(asset.disk||'')}">
+                </div>
+                <div>
+                    <label>Access Level</label>
+                    <select name="access_level">
+                        <option value="public" ${asset.access_level==='public'?'selected':''}>public</option>
+                        <option value="member" ${asset.access_level==='member'?'selected':''}>member</option>
+                        <option value="internal" ${asset.access_level==='internal'?'selected':''}>internal</option>
+                        <option value="restricted" ${asset.access_level==='restricted'?'selected':''}>restricted</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Public URL</label>
+                    <input name="public_url" type="text" value="${escapeHtml(asset.public_url||'')}">
+                </div>
+                <div>
+                    <label>Caption</label>
+                    <input name="caption" type="text" value="${escapeHtml(asset.caption||'')}">
+                </div>
+                <div>
+                    <label>Sort Order</label>
+                    <input name="sort_order" type="number" value="${asset.sort_order||1}">
+                </div>
+                <div class="checkbox-group">
+                    <label class="checkbox-label">
+                        <input name="is_primary" type="checkbox" ${asset.is_primary?'checked':''}>
+                        Primary Asset
+                    </label>
+                </div>
+                <div class="checkbox-group">
+                    <label class="checkbox-label">
+                        <input name="is_public" type="checkbox" ${asset.is_public?'checked':''}>
+                        Public Asset
+                    </label>
+                </div>
+            </div>
+            <div class="asset-actions-row" style="margin-top: 12px; display: flex; gap: 8px;">
+                <button type="submit" class="btn-save-edit">Simpan</button>
+                <button type="button" class="secondary btn-cancel-edit">Batal</button>
+            </div>
+        </form>
     `;
 }
 
@@ -529,5 +617,83 @@ if (refreshButton) {
     refreshButton.addEventListener('click', () => {
         hideAlert();
         loadCollection();
+    });
+}
+
+if (assetList) {
+    assetList.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('btn-delete-asset')) {
+            const assetId = e.target.dataset.id;
+            if (!confirm('Apakah Anda yakin ingin menghapus asset ini?')) return;
+            
+            setButtonBusy(e.target, true, 'Menghapus...', 'Hapus');
+            try {
+                await api.delete(`/staff/collections/${encodeURIComponent(identifier)}/digital-assets/${encodeURIComponent(assetId)}`, {
+                    reason: 'Delete asset via staff UI'
+                });
+                showAlert('Sukses', 'Asset berhasil dihapus.', 'success');
+                await loadCollection(false);
+            } catch (error) {
+                showAlert('Gagal menghapus', messageFromError(normalizeApiError(error), 'Gagal menghapus asset.'), 'error');
+                setButtonBusy(e.target, false, '', 'Hapus');
+            }
+        } else if (e.target.classList.contains('btn-edit-asset')) {
+            const index = e.target.dataset.index;
+            const asset = currentAssets[index];
+            const itemEl = e.target.closest('.asset-item');
+            
+            const summaryGrid = itemEl.querySelector('.summary-grid');
+            const editContainer = itemEl.querySelector('.asset-edit-container');
+            const actionsRow = itemEl.querySelector('.asset-actions-row');
+            
+            summaryGrid.style.display = 'none';
+            actionsRow.style.display = 'none';
+            editContainer.innerHTML = renderEditForm(asset, index);
+            editContainer.style.display = 'block';
+            
+        } else if (e.target.classList.contains('btn-cancel-edit')) {
+            const itemEl = e.target.closest('.asset-item');
+            const summaryGrid = itemEl.querySelector('.summary-grid');
+            const editContainer = itemEl.querySelector('.asset-edit-container');
+            const actionsRow = itemEl.querySelector('.asset-actions-row');
+            
+            summaryGrid.style.display = 'grid';
+            actionsRow.style.display = 'flex';
+            editContainer.innerHTML = '';
+            editContainer.style.display = 'none';
+        }
+    });
+
+    assetList.addEventListener('submit', async (e) => {
+        if (e.target.classList.contains('asset-edit-form')) {
+            e.preventDefault();
+            const form = e.target;
+            const assetId = form.dataset.id;
+            const saveBtn = form.querySelector('.btn-save-edit');
+            
+            setButtonBusy(saveBtn, true, 'Menyimpan...', 'Simpan');
+            
+            const payload = {
+                asset_type: formValue(form, 'asset_type') || null,
+                file_role: formValue(form, 'file_role') || null,
+                disk: formValue(form, 'disk') || null,
+                access_level: formValue(form, 'access_level') || null,
+                public_url: formValue(form, 'public_url') || null,
+                caption: formValue(form, 'caption') || null,
+                sort_order: parseInt(formValue(form, 'sort_order') || '1', 10),
+                is_primary: formChecked(form, 'is_primary'),
+                is_public: formChecked(form, 'is_public'),
+                reason: 'Edit digital asset via staff UI'
+            };
+            
+            try {
+                await api.patch(`/staff/collections/${encodeURIComponent(identifier)}/digital-assets/${encodeURIComponent(assetId)}`, payload);
+                showAlert('Sukses', 'Metadata asset berhasil diperbarui.', 'success');
+                await loadCollection(false);
+            } catch (error) {
+                showAlert('Gagal menyimpan', messageFromError(normalizeApiError(error), 'Gagal memperbarui asset.'), 'error');
+                setButtonBusy(saveBtn, false, '', 'Simpan');
+            }
+        }
     });
 }

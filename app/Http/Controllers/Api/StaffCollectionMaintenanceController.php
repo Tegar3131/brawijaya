@@ -279,6 +279,72 @@ class StaffCollectionMaintenanceController extends Controller
         ], 201);
     }
 
+    public function updateDigitalAsset(
+        Request $request,
+        string $identifier,
+        DigitalAsset $asset,
+        CollectionMaintenanceService $service
+    ): JsonResponse {
+        $staff = $this->staff($request);
+        $collection = $this->resolveCollection($identifier);
+        $this->authorizeCollectionUnit($staff, $collection);
+
+        $validated = $request->validate([
+            'reason' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'asset_type' => ['sometimes', 'in:cover,photo,document,pdf,epub,video,audio,thumbnail,mets_package'],
+            'file_role' => ['sometimes', 'nullable', 'in:original,access,thumbnail,watermarked,derivative'],
+            'disk' => ['sometimes', 'nullable', 'string', 'max:60'],
+            'public_url' => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'caption' => ['sometimes', 'nullable', 'string'],
+            'is_primary' => ['sometimes', 'boolean'],
+            'is_public' => ['sometimes', 'boolean'],
+            'access_level' => ['sometimes', 'nullable', 'in:public,member,internal,restricted'],
+            'sort_order' => ['sometimes', 'nullable', 'integer'],
+        ]);
+
+        $assetData = collect($validated)->except(['reason'])->toArray();
+
+        $asset = $service->updateDigitalAsset(
+            collection: $collection,
+            asset: $asset,
+            data: $assetData,
+            actor: $staff,
+            reason: $validated['reason'] ?? 'Update digital asset via staff API'
+        );
+
+        return response()->json([
+            'message' => 'Digital asset berhasil diperbarui.',
+            'data' => $this->formatAsset($asset),
+        ]);
+    }
+
+    public function deleteDigitalAsset(
+        Request $request,
+        string $identifier,
+        DigitalAsset $asset,
+        CollectionMaintenanceService $service
+    ): JsonResponse {
+        $staff = $this->staff($request);
+        $collection = $this->resolveCollection($identifier);
+        $this->authorizeCollectionUnit($staff, $collection);
+
+        $validated = $request->validate([
+            'reason' => ['sometimes', 'nullable', 'string', 'max:255'],
+        ]);
+
+        $updated = $service->deleteDigitalAsset(
+            collection: $collection,
+            asset: $asset,
+            actor: $staff,
+            reason: $validated['reason'] ?? 'Delete digital asset via staff API'
+        );
+
+        return response()->json([
+            'message' => 'Digital asset berhasil dihapus.',
+            'data' => $this->formatSummary($updated),
+        ]);
+    }
+
     private function staff(Request $request): User
     {
         /** @var User $user */

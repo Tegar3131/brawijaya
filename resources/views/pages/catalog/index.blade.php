@@ -5,10 +5,9 @@
 @section('content')
     <section class="card">
         <div class="eyebrow">Public Catalog</div>
-        <h1>Katalog Museum dan Perpustakaan</h1>
-        <p>
-            Cari koleksi perpustakaan dan museum yang sudah dipublikasikan.
-            Data diambil dari endpoint <code>GET /api/catalog/search</code>.
+        <h1 id="catalog-page-title">Katalog Museum dan Perpustakaan</h1>
+        <p id="catalog-page-description">
+            Jelajahi koleksi literatur sejarah dan artefak budaya yang telah didigitalisasi.
         </p>
     </section>
 
@@ -46,15 +45,6 @@
                     >
                 </div>
 
-                <div>
-                    <label for="category_slug">Slug Kategori</label>
-                    <input
-                        id="category_slug"
-                        name="category_slug"
-                        type="text"
-                        placeholder="buku, artefak-bersejarah"
-                    >
-                </div>
 
                 <div>
                     <label for="year_from">Tahun dari</label>
@@ -130,104 +120,166 @@
     <style>
         label {
             display: block;
-            margin-bottom: 6px;
-            font-size: 14px;
-            font-weight: 700;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--muted);
         }
 
         input,
         select {
             width: 100%;
             border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 10px 12px;
+            border-radius: 4px;
+            padding: 12px 14px;
             font-size: 14px;
             background: white;
+            transition: all 0.2s;
+        }
+        
+        input:focus, select:focus {
+            border-color: var(--accent);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(194, 155, 64, 0.1);
         }
 
         .catalog-form-grid {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 16px;
+            gap: 20px;
         }
 
         .catalog-actions {
-            margin-top: 18px;
+            margin-top: 24px;
             display: flex;
-            gap: 10px;
+            gap: 12px;
             flex-wrap: wrap;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
         }
 
         button,
         .button-link {
             border: 0;
-            border-radius: 8px;
-            padding: 10px 14px;
-            background: var(--accent);
+            border-radius: 4px;
+            padding: 12px 24px;
+            background: var(--brand-dark);
             color: white;
-            font-weight: 700;
+            font-weight: 600;
             cursor: pointer;
             text-decoration: none;
             display: inline-block;
-            font-size: 14px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            transition: all 0.2s;
+        }
+        
+        button:hover, .button-link:hover {
+            background: var(--accent);
+            color: white;
         }
 
         button.secondary {
-            background: #e2e8f0;
-            color: var(--text);
+            background: white;
+            color: var(--brand-dark);
+            border: 1px solid var(--border);
+        }
+        
+        button.secondary:hover {
+            background: var(--bg);
+            border-color: var(--accent);
         }
 
         button:disabled {
             opacity: .55;
             cursor: not-allowed;
         }
+        
+        #catalog-results {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
 
         .catalog-item {
             background: var(--panel);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 14px;
+            border-radius: 4px;
+            padding: 32px 24px;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .catalog-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.04);
+            border-color: var(--accent);
         }
 
         .catalog-item h2 {
-            margin-bottom: 8px;
+            margin-bottom: 12px;
+            font-size: 22px;
         }
 
         .catalog-meta {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
-            margin: 10px 0;
+            gap: 6px;
+            margin: 16px 0;
         }
 
         .badge {
             display: inline-flex;
             align-items: center;
             border: 1px solid var(--border);
-            background: #f8fafc;
-            border-radius: 999px;
-            padding: 4px 9px;
+            background: var(--bg);
+            border-radius: 4px;
+            padding: 4px 10px;
             color: var(--muted);
-            font-size: 12px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
         }
 
         .catalog-description {
-            margin: 10px 0 14px;
+            margin: 0 0 24px;
+            flex-grow: 1;
+            font-size: 15px;
         }
 
         .catalog-pagination {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 12px;
+            gap: 16px;
             flex-wrap: wrap;
+            font-family: var(--font-sans);
+            font-size: 14px;
         }
 
         .pagination-buttons {
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
+        }
+        
+        .pagination-buttons button {
+            padding: 8px 16px;
+            background: white;
+            color: var(--brand-dark);
+            border: 1px solid var(--border);
+        }
+        
+        .pagination-buttons button:hover:not(:disabled) {
+            background: var(--bg);
+            border-color: var(--accent);
+            color: var(--brand-dark);
         }
 
         .alert-error {

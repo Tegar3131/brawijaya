@@ -331,9 +331,9 @@ function assetPreviewUrl(asset) {
     }
 
     return asset.public_url
+        || publicStorageUrl(asset.path)
         || publicStorageUrl(asset.thumbnail_path)
-        || publicStorageUrl(asset.watermarked_path)
-        || publicStorageUrl(asset.path);
+        || publicStorageUrl(asset.watermarked_path);
 }
 
 function renderAssets(item) {

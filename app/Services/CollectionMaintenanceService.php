@@ -493,6 +493,112 @@ class CollectionMaintenanceService
         });
     }
 
+    public function updateDigitalAsset(
+        CollectionModel $collection,
+        DigitalAsset $asset,
+        array $data,
+        User $actor,
+        ?string $reason = 'Update digital asset metadata'
+    ): DigitalAsset {
+        return DB::transaction(function () use ($collection, $asset, $data, $actor, $reason) {
+            if ((int) $asset->collection_id !== (int) $collection->id) {
+                throw new RuntimeException('Asset tidak belongs to collection ini.');
+            }
+
+            $oldValues = $asset->toArray();
+
+            if (isset($data['asset_type'])) $asset->asset_type = $data['asset_type'];
+            if (isset($data['file_role'])) $asset->file_role = $data['file_role'];
+            if (isset($data['disk'])) $asset->disk = $data['disk'];
+            if (isset($data['public_url'])) $asset->public_url = $data['public_url'];
+            if (isset($data['caption'])) $asset->caption = $data['caption'];
+            if (isset($data['is_primary'])) $asset->is_primary = $data['is_primary'];
+            if (isset($data['is_public'])) $asset->is_public = $data['is_public'];
+            if (isset($data['access_level'])) $asset->access_level = $data['access_level'];
+            if (isset($data['sort_order'])) $asset->sort_order = $data['sort_order'];
+
+            $asset->save();
+
+            $fresh = $this->freshCollection($collection);
+
+            $this->recordVersion(
+                collection: $fresh,
+                actor: $actor,
+                reason: $reason,
+                diff: [
+                    'operation' => 'digital_asset_update',
+                    'asset_id' => $asset->id,
+                    'old' => $oldValues,
+                    'new' => $asset->toArray(),
+                ]
+            );
+
+            $this->auditLogService->record(
+                module: 'digital_asset',
+                action: 'update',
+                event: 'digital_asset.updated',
+                actor: $actor,
+                auditable: $fresh,
+                oldValues: $oldValues,
+                newValues: $asset->toArray(),
+                metadata: [
+                    'reason' => $reason,
+                    'record_code' => $fresh->record_code,
+                    'asset_id' => $asset->id,
+                ]
+            );
+
+            return $asset->fresh();
+        });
+    }
+
+    public function deleteDigitalAsset(
+        CollectionModel $collection,
+        DigitalAsset $asset,
+        User $actor,
+        ?string $reason = 'Delete digital asset'
+    ): CollectionModel {
+        return DB::transaction(function () use ($collection, $asset, $actor, $reason) {
+            if ((int) $asset->collection_id !== (int) $collection->id) {
+                throw new RuntimeException('Asset tidak belongs to collection ini.');
+            }
+
+            $oldValues = $asset->toArray();
+            $asset->delete();
+
+            $fresh = $this->freshCollection($collection);
+
+            $this->recordVersion(
+                collection: $fresh,
+                actor: $actor,
+                reason: $reason,
+                diff: [
+                    'operation' => 'digital_asset_delete',
+                    'asset_id' => $asset->id,
+                    'old' => $oldValues,
+                    'new' => null,
+                ]
+            );
+
+            $this->auditLogService->record(
+                module: 'digital_asset',
+                action: 'delete',
+                event: 'digital_asset.deleted',
+                actor: $actor,
+                auditable: $fresh,
+                oldValues: $oldValues,
+                newValues: null,
+                metadata: [
+                    'reason' => $reason,
+                    'record_code' => $fresh->record_code,
+                    'asset_id' => $asset->id,
+                ]
+            );
+
+            return $fresh;
+        });
+    }
+
     private function valueColumnFor(MetadataElement $element, mixed $value): string
     {
         if (is_array($value)) {
